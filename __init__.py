@@ -4,7 +4,6 @@ from typing import List, Tuple
 from hoshino import HoshinoBot, Service
 from hoshino.typing import CQEvent, MessageSegment
 
-from . import functions as fn
 from .data_source import commands, make_image
 from .download import DownloadError, ResourceError
 from .models import UserInfo
@@ -60,6 +59,8 @@ async def handle(ev: CQEvent, prefix: str = "") -> Tuple[List[UserInfo], List[st
                     text = text.strip()
                     if text:
                         args.append(text)
+    if not users:
+        users.append(UserInfo(qq=str(ev.user_id), group=str(ev.group_id)))
     return users, args
 
 
@@ -82,8 +83,8 @@ async def gen_image(bot: HoshinoBot, ev: CQEvent):
                     await bot.finish(ev, "图片下载出错，请稍后再试")
                 except ResourceError:
                     await bot.finish(ev, "资源下载出错，请稍后再试")
-                except:
-                    # logger.warning(traceback.format_exc())
+                except Exception as e:
+                    sv.logger.debug(f"{e}")
                     await bot.finish(ev, "出错了，请稍后再试")
                 if "base64" in im:
                     im = MessageSegment.image(im)
