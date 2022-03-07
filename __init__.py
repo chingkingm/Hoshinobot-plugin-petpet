@@ -60,7 +60,7 @@ async def handle(ev: CQEvent, prefix: str = "") -> Tuple[List[UserInfo], List[st
                     if text:
                         args.append(text)
     if not users:
-        users.append(UserInfo(qq=str(ev.user_id), group=str(ev.group_id)))
+        users.append(UserInfo(qq=str(ev.self_id), group=str(ev.group_id)))
     return users, args
 
 
@@ -89,3 +89,4 @@ async def gen_image(bot: HoshinoBot, ev: CQEvent):
                 if "base64" in im:
                     im = MessageSegment.image(im)
                 await bot.send(ev, im)
+            break
