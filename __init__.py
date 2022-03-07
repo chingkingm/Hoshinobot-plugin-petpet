@@ -88,5 +88,5 @@ async def gen_image(bot: HoshinoBot, ev: CQEvent):
                     await bot.finish(ev, "出错了，请稍后再试")
                 if "base64" in im:
                     im = MessageSegment.image(im)
-                await bot.send(ev, im)
-            break
+                await bot.finish(ev, im)
+

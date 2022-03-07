@@ -553,3 +553,14 @@ async def ask(
     draw.text((sep_w, sep_h + img_h + 10), f"啊这，{ta}说不知道", font=font, fill="black")
     bg.paste(img, (sep_w, sep_h))
     return save_jpg(bg)
+
+
+async def prpr(users: List[UserInfo], **kwargs) -> str:
+    img = users[0].img
+    points = [(0, 19), (236, 0), (287, 264), (66, 351)]
+    screen = perspective(resize(img, (330, 330)), points)
+    bg = await load_image("prpr/0.png")
+    frame = Image.new("RGBA", bg.size, (255, 255, 255, 0))
+    frame.paste(screen, (56, 284))
+    frame.paste(bg, mask=bg)
+    return save_jpg(frame)
