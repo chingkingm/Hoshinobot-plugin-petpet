@@ -7,13 +7,14 @@ from .models import UserInfo, Command
 from .functions import *
 
 commands = [
-    Command(("摸", "摸摸", "rua"), petpet),
+    Command(("摸", "摸摸", "摸头", "摸摸头", "rua"), petpet, arg_num=1),
     Command(("亲", "亲亲"), kiss),
     Command(("贴", "贴贴", "蹭", "蹭蹭"), rub),
-    Command(("顶"), play),
+    Command(("顶", "玩"), play),
     Command(("拍",), pat),
     Command(("撕",), rip),
     Command(("丢", "扔"), throw),
+    Command(("抛", "掷"), throw_gif),
     Command(("爬",), crawl),
     Command(("精神支柱",), support),
     Command(("一直",), always, convert=False),
@@ -30,6 +31,12 @@ commands = [
     Command(("出警",), police),
     Command(("问问", "去问问"), ask, convert=False, arg_num=1),
     Command(("舔", "舔屏", "prpr"), prpr),
+    Command(("搓",), twist),
+    Command(("墙纸",), wallpaper),
+    Command(("国旗",), china_flag),
+    Command(("交个朋友",), make_friend, convert=False, arg_num=1),
+    Command(("继续干活",), back_to_work),
+    Command(("完美", "完美的"), perfect, convert=False),
 ]
 
 

@@ -1,5 +1,6 @@
 import random
-from typing import List
+from io import BytesIO
+from typing import Union, List
 from PIL.Image import Image as IMG
 from PIL import Image, ImageFilter, ImageDraw
 
@@ -10,6 +11,7 @@ from .utils import (
     rotate,
     resize,
     perspective,
+    square,
     to_jpg,
     save_jpg,
     save_gif,
@@ -19,7 +21,7 @@ from .utils import (
 )
 
 
-async def petpet(users: List[UserInfo], **kwargs) -> str:
+async def petpet(users: List[UserInfo], args: List[str] = [], **kwargs) -> str:
     img = users[0].img
     frames = []
     locs = [
@@ -29,10 +31,13 @@ async def petpet(users: List[UserInfo], **kwargs) -> str:
         (10, 33, 102, 84),
         (12, 20, 98, 98),
     ]
+    if args and "圆" in args[0]:
+        img = circle(img)
     for i in range(5):
         frame = Image.new("RGBA", (112, 112), (255, 255, 255, 0))
         x, y, w, h = locs[i]
-        frame.paste(resize(img, (w, h)), (x, y))
+        new_img = resize(img, (w, h))
+        frame.paste(new_img, (x, y), mask=new_img)
         hand = await load_image(f"petpet/{i}.png")
         frame.paste(hand, mask=hand)
         frames.append(frame)
@@ -229,6 +234,28 @@ async def throw(users: List[UserInfo], **kwargs) -> str:
     frame = await load_image("throw/0.png")
     frame.paste(img, (15, 178), mask=img)
     return save_jpg(frame)
+
+
+async def throw_gif(users: List[UserInfo], **kwargs) -> str:
+    img = users[0].img
+    locs = [
+        [(32, 32, 108, 36)],
+        [(32, 32, 122, 36)],
+        [],
+        [(123, 123, 19, 129)],
+        [(185, 185, -50, 200), (33, 33, 289, 70)],
+        [(32, 32, 280, 73)],
+        [(35, 35, 259, 31)],
+        [(175, 175, -50, 220)],
+    ]
+    frames = []
+    for i in range(8):
+        frame = await load_image(f"throw_gif/{i}.png")
+        for w, h, x, y in locs[i]:
+            new_img = resize(circle(img), (w, h))
+            frame.paste(new_img, (x, y), mask=new_img)
+        frames.append(frame)
+    return save_gif(frames, 0.1)
 
 
 async def crawl(users: List[UserInfo], **kwargs) -> str:
@@ -563,4 +590,96 @@ async def prpr(users: List[UserInfo], **kwargs) -> str:
     frame = Image.new("RGBA", bg.size, (255, 255, 255, 0))
     frame.paste(screen, (56, 284))
     frame.paste(bg, mask=bg)
+    return save_jpg(frame)
+
+
+async def twist(users: List[UserInfo], **kwargs) -> str:
+    img = users[0].img
+    frames = []
+    locs = [
+        (25, 66, 0),
+        (25, 66, 60),
+        (23, 68, 120),
+        (20, 69, 180),
+        (22, 68, 240),
+        (25, 66, 300),
+    ]
+    for i in range(5):
+        frame = Image.new("RGBA", (166, 168), (255, 255, 255, 0))
+        x, y, a = locs[i]
+        frame.paste(rotate(resize(img, (78, 78)), a, expand=False), (x, y))
+        bg = await load_image(f"twist/{i}.png")
+        frame.paste(bg, mask=bg)
+        frames.append(frame)
+    return save_gif(frames, 0.1)
+
+
+async def wallpaper(users: List[UserInfo], **kwargs) -> str:
+    img = users[0].img
+    bg = await load_image("wallpaper/0.png")
+    frame = Image.new("RGBA", bg.size, (255, 255, 255, 0))
+    frame.paste(resize(img, (770, 770)), (260, 330))
+    frame.paste(bg, mask=bg)
+    return save_jpg(frame)
+
+
+async def china_flag(users: List[UserInfo], **kwargs) -> str:
+    img = users[0].img
+    bg = await load_image("china_flag/0.png")
+    frame = Image.new("RGBA", bg.size, (255, 255, 255, 0))
+    frame.paste(resize(img, bg.size))
+    frame.paste(bg, mask=bg)
+    return save_jpg(frame)
+
+
+async def make_friend(
+    users: List[UserInfo], args: List[str] = [], **kwargs
+) -> Union[str, str]:
+    img = users[0].img
+    img = to_jpg(img).convert("RGBA")
+    img = resize(img, (1000, int(img.height * 1000 / img.width)))
+
+    bg = await load_image("make_friend/0.png")
+    frame = img.copy()
+    frame.paste(
+        rotate(resize(img, (250, int(250 / img.width * img.height))), 9),
+        (743, img.height - 155),
+    )
+    frame.paste(rotate(resize(square(img), (55, 55)), 9), (836, img.height - 278))
+    frame.paste(bg, (0, img.height - 1000), mask=bg)
+    font = await load_font(DEFAULT_FONT, 40)
+
+    name = (args[0] if args else "") or users[0].name
+    if not name:
+        return "找不到名字，加上名字再试吧~"
+    text_frame = Image.new("RGBA", (500, 50))
+    draw = ImageDraw.Draw(text_frame)
+    draw.text((0, -10), name, font=font, fill="#FFFFFF")
+    text_frame = rotate(resize(text_frame, (250, 25)), 9)
+    frame.paste(text_frame, (710, img.height - 340), mask=text_frame)
+    return save_jpg(frame)
+
+
+async def back_to_work(users: List[UserInfo], **kwargs) -> str:
+    img = users[0].img
+    bg = await load_image("back_to_work/0.png")
+    frame = Image.new("RGBA", bg.size, (255, 255, 255, 0))
+    frame.paste(rotate(resize(img, (250, 250)), 20), (46, 43))
+    frame.paste(bg, mask=bg)
+    return save_jpg(frame)
+
+
+async def perfect(users: List[UserInfo], **kwargs) -> str:
+    img = users[0].img
+    img = to_jpg(img).convert("RGBA")
+    img_w, img_h = img.size
+    block_w, block_h = (310, 460)
+    ratio = min(block_w / img_w, block_h / img_h)
+    img_w = int(img_w * ratio)
+    img_h = int(img_h * ratio)
+    img = resize(img, (img_w, img_h))
+    frame = await load_image("perfect/0.png")
+    frame.paste(
+        img, (313 + int((block_w - img_w) / 2), 64 + int((block_h - img_h) / 2))
+    )
     return save_jpg(frame)
