@@ -1,6 +1,7 @@
-# nonebot-plugin-petpet
+# Hoshinobot-plugin-petpet
+移植自[nonebot-plugin-petpet](https://github.com/MeetWq/nonebot-plugin-petpet)
 
-[Nonebot2](https://github.com/nonebot/nonebot2) 插件，制作头像相关的表情包
+[Nonebot2](https://github.com/nonebot/nonebot2) 插件的Hoshino版，制作头像相关的表情包
 
 ### 使用
 
@@ -11,7 +12,8 @@
 </div>
 
 
-每个表情包首次使用时会下载对应的图片和字体，可以手动下载 `resources` 下的 `images` 和 `fonts` 文件夹，放置于机器人运行目录下的 `data/petpet/` 文件夹中
+~~每个表情包首次使用时会下载对应的图片和字体，可以手动下载 `resources` 下的 `images` 和 `fonts` 文件夹，放置于机器人运行目录下的 `data/petpet/` 文件夹中~~
+图片及字体资源调整到了.resources下，会随git clone自动下载
 
 
 #### 触发方式
@@ -22,6 +24,7 @@
 
 前三种触发方式会使用目标qq的头像作为图片
 
+如果`/`触发与其他插件冲突，可以使用`pp/`作为前缀
 #### 支持的指令
 
 | 指令 | 效果 | 备注 |

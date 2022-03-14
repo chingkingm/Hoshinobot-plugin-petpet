@@ -1,6 +1,6 @@
 import math
 import imageio
-import cv2 as cv
+from cv2 import cv2 as cv
 import numpy as np
 from enum import Enum
 from io import BytesIO

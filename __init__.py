@@ -1,4 +1,6 @@
 import re
+from base64 import b64encode
+from io import BytesIO
 from typing import List, Tuple
 
 from hoshino import HoshinoBot, Service
@@ -12,10 +14,15 @@ from .utils import help_image
 sv = Service("头像表情包")
 
 
+def bytesio2b64(im: BytesIO) -> str:
+    im = im.getvalue()
+    return f"base64://{b64encode(im).decode()}"
+
+
 @sv.on_fullmatch("头像表情包")
 async def help(bot: HoshinoBot, ev: CQEvent):
     im = await help_image(commands)
-    await bot.send(ev, MessageSegment.image(im))
+    await bot.send(ev, MessageSegment.image(bytesio2b64(im)))
 
 
 def is_qq(msg: str):
@@ -70,7 +77,9 @@ async def gen_image(bot: HoshinoBot, ev: CQEvent):
     assert isinstance(msg, str)
     for com in commands:
         for kw in com.keywords:
-            if kw in msg:
+            if msg.startswith(kw):
+                if kw == "玩" and msg.startswith("玩游戏"):
+                    continue
                 args = msg[len(kw) :]
                 users, args = await handle(ev, kw)
                 sender = UserInfo(qq=str(ev.user_id))
@@ -86,7 +95,8 @@ async def gen_image(bot: HoshinoBot, ev: CQEvent):
                 except Exception as e:
                     sv.logger.debug(f"{e}")
                     await bot.finish(ev, "出错了，请稍后再试")
-                if "base64" in im:
-                    im = MessageSegment.image(im)
+                if isinstance(im, str):
+                    im = MessageSegment.text(im)
+                else:
+                    im = MessageSegment.image(bytesio2b64(im))
                 await bot.finish(ev, im)
-
