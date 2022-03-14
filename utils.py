@@ -1,9 +1,10 @@
-import base64
 import math
-import numpy
 import imageio
+from cv2 import cv2 as cv
+import numpy as np
+from enum import Enum
 from io import BytesIO
-from typing import List, Tuple
+from typing import Callable, List, Tuple, Union
 from PIL.Image import Image as IMG
 from PIL.ImageFont import FreeTypeFont
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
@@ -32,28 +33,117 @@ def circle(img: IMG) -> IMG:
 
 
 def square(img: IMG) -> IMG:
-    width, height = img.size
-    length = min(width, height)
-    return img.crop(
-        (
-            int((width - length) / 2),
-            int((height - length) / 2),
-            int((width + length) / 2),
-            int((height + length) / 2),
-        )
-    )
+    length = min(img.width, img.height)
+    return cut_size(img, (length, length))
+
+
+# 适应大小模式
+class FitSizeMode(Enum):
+    INSIDE = 0  # 图片必须在指定的大小范围内
+    INCLUDE = 1  # 图片必须包括指定的大小范围
+
+
+# 适应大小方向
+class FitSizeDir(Enum):
+    CENTER = 0  # 居中
+    NORTH = 1
+    SOUTH = 2
+    WEST = 3
+    EAST = 4
+    NORTHWEST = 5
+    NORTHEAST = 6
+    SOUTHWEST = 7
+    SOUTHEAST = 8
+
+
+def limit_size(
+    img: IMG, size: Tuple[int, int], mode: FitSizeMode = FitSizeMode.INCLUDE
+) -> IMG:
+    """
+    调整图片到指定的大小，不改变长宽比（即返回的图片大小不一定是指定的size）
+    :params
+      * ``img``: 待调整的图片
+      * ``size``: 期望图片大小
+      * ``mode``: FitSizeMode.INSIDE 表示图片必须在指定的大小范围内；FitSizeMode.INCLUDE 表示图片必须包括指定的大小范围
+    """
+    w, h = size
+    img_w, img_h = img.size
+    if mode == FitSizeMode.INSIDE:
+        ratio = min(w / img_w, h / img_h)
+    elif mode == FitSizeMode.INCLUDE:
+        ratio = max(w / img_w, h / img_h)
+    img_w = int(img_w * ratio)
+    img_h = int(img_h * ratio)
+    return resize(img, (img_w, img_h))
+
+
+def cut_size(
+    img: IMG,
+    size: Tuple[int, int],
+    direction: FitSizeDir = FitSizeDir.CENTER,
+    bg_color: Union[str, float, Tuple[float, ...]] = (255, 255, 255, 0),
+) -> IMG:
+    """
+    裁剪图片到指定的大小，超出部分裁剪，不足部分设为指定颜色
+    :params
+      * ``img``: 待调整的图片
+      * ``size``: 期望图片大小
+      * ``direction``: 调整图片大小时图片的方位；默认为居中 FitSizeDir.CENTER
+      * ``bg_color``: FitSizeMode.INSIDE 时的背景颜色
+    """
+    w, h = size
+    img_w, img_h = img.size
+    x = int((w - img_w) / 2)
+    y = int((h - img_h) / 2)
+    if direction in [FitSizeDir.NORTH, FitSizeDir.NORTHWEST, FitSizeDir.NORTHEAST]:
+        y = 0
+    elif direction in [FitSizeDir.SOUTH, FitSizeDir.SOUTHWEST, FitSizeDir.SOUTHEAST]:
+        y = h - img_h
+    if direction in [FitSizeDir.WEST, FitSizeDir.NORTHWEST, FitSizeDir.SOUTHWEST]:
+        x = 0
+    elif direction in [FitSizeDir.EAST, FitSizeDir.NORTHEAST, FitSizeDir.SOUTHEAST]:
+        x = w - img_w
+    result = Image.new("RGBA", size, bg_color)
+    result.paste(img, (x, y))
+    return result
+
+
+def fit_size(
+    img: IMG,
+    size: Tuple[int, int],
+    mode: FitSizeMode = FitSizeMode.INCLUDE,
+    direction: FitSizeDir = FitSizeDir.CENTER,
+    bg_color: Union[str, float, Tuple[float, ...]] = (255, 255, 255, 0),
+) -> IMG:
+    """
+    调整图片到指定的大小，超出部分裁剪，不足部分设为指定颜色
+    :params
+      * ``img``: 待调整的图片
+      * ``size``: 期望图片大小
+      * ``mode``: FitSizeMode.INSIDE 表示图片必须在指定的大小范围内，不足部分设为指定颜色；FitSizeMode.INCLUDE 表示图片必须包括指定的大小范围，超出部分裁剪
+      * ``direction``: 调整图片大小时图片的方位；默认为居中 FitSizeDir.CENTER
+      * ``bg_color``: FitSizeMode.INSIDE 时的背景颜色
+    """
+    return cut_size(limit_size(img, size, mode), size, direction, bg_color)
 
 
 def perspective(img: IMG, points: List[Tuple[float, float]]):
+    """
+    透视变换
+    :params
+      * ``img``: 待变换的图片
+      * ``points``: 变换后点的位置，顺序依次为：左上->右上->右下->左下
+    """
+
     def find_coeffs(pa: List[Tuple[float, float]], pb: List[Tuple[float, float]]):
         matrix = []
         for p1, p2 in zip(pa, pb):
             matrix.append([p1[0], p1[1], 1, 0, 0, 0, -p2[0] * p1[0], -p2[0] * p1[1]])
             matrix.append([0, 0, 0, p1[0], p1[1], 1, -p2[1] * p1[0], -p2[1] * p1[1]])
-        A = numpy.matrix(matrix, dtype=numpy.float32)
-        B = numpy.array(pb).reshape(8)
-        res = numpy.dot(numpy.linalg.inv(A.T * A) * A.T, B)
-        return numpy.array(res).reshape(8)
+        A = np.matrix(matrix, dtype=np.float32)
+        B = np.array(pb).reshape(8)
+        res = np.dot(np.linalg.inv(A.T * A) * A.T, B)
+        return np.array(res).reshape(8)
 
     img_w, img_h = img.size
     points_w = [p[0] for p in points]
@@ -65,11 +155,30 @@ def perspective(img: IMG, points: List[Tuple[float, float]]):
     return img.transform((new_w, new_h), Image.PERSPECTIVE, coeffs, Image.BICUBIC)
 
 
-def save_gif(frames: List[IMG], duration: float) -> str:
+def motion_blur(img: IMG, angle=0, degree=0) -> IMG:
+    if degree == 0:
+        return img.copy()
+    matrix = cv.getRotationMatrix2D((degree / 2, degree / 2), angle + 45, 1)
+    kernel = np.diag(np.ones(degree))
+    kernel = cv.warpAffine(kernel, matrix, (degree, degree)) / degree
+    blurred = cv.filter2D(np.asarray(img), -1, kernel)
+    cv.normalize(blurred, blurred, 0, 255, cv.NORM_MINMAX)
+    return Image.fromarray(np.array(blurred, dtype=np.uint8))
+
+
+def distort(img: IMG, coefficients: Tuple[float, float, float, float]) -> IMG:
+    res = cv.undistort(
+        np.asarray(img),
+        np.array([[100, 0, img.width / 2], [0, 100, img.height / 2], [0, 0, 1]]),
+        np.asarray(coefficients),
+    )
+    return Image.fromarray(np.array(res, dtype=np.uint8))
+
+
+def save_gif(frames: List[IMG], duration: float) -> BytesIO:
     output = BytesIO()
     imageio.mimsave(output, frames, format="gif", duration=duration)
-    base64_str = base64.b64encode(output.getvalue()).decode()
-    return f"base64://{base64_str}"
+    return output
 
 
 def to_jpg(frame: IMG, bg_color=(255, 255, 255)) -> IMG:
@@ -81,12 +190,45 @@ def to_jpg(frame: IMG, bg_color=(255, 255, 255)) -> IMG:
         return frame.convert("RGB")
 
 
-def save_jpg(frame: IMG) -> str:
+def save_jpg(frame: IMG) -> BytesIO:
     output = BytesIO()
     frame = frame.convert("RGB")
     frame.save(output, format="jpeg")
-    base64_str = base64.b64encode(output.getvalue()).decode()
-    return f"base64://{base64_str}"
+    return output
+
+
+def make_jpg_or_gif(
+    img: IMG, func: Callable[[IMG], IMG], gif_zoom: float = 1, gif_max_frames: int = 50
+) -> BytesIO:
+    """
+    制作静图或者动图
+    :params
+      * ``img``: 输入图片，如头像
+      * ``func``: 图片处理函数，输入img，返回处理后的图片
+      * ``gif_zoom``: gif 图片缩放比率，避免生成的 gif 太大
+      * ``direction``: gif 最大帧数，避免生成的 gif 太大
+    """
+    if not getattr(img, "is_animated", False):
+        return save_jpg(func(img))
+    else:
+        index = range(img.n_frames)
+        ratio = img.n_frames / gif_max_frames
+        duration = img.info["duration"] / 1000
+        if ratio > 1:
+            index = (int(i * ratio) for i in range(gif_max_frames))
+            duration *= ratio
+
+        frames = []
+        for i in index:
+            img.seek(i)
+            new_img = func(img)
+            frames.append(
+                resize(
+                    new_img,
+                    (int(new_img.width * gif_zoom), int(new_img.height * gif_zoom)),
+                )
+            )
+        return save_gif(frames, duration)
 
 
 def to_image(data: bytes, convert: bool = True) -> IMG:
@@ -104,6 +246,22 @@ async def load_image(name: str) -> IMG:
 async def load_font(name: str, fontsize: int) -> FreeTypeFont:
     font = await get_font(name)
     return ImageFont.truetype(BytesIO(font), fontsize, encoding="utf-8")
+
+
+def wrap_text(text: str, font: FreeTypeFont, max_width: float, **kwargs) -> List[str]:
+    line = ""
+    lines = []
+    for t in text:
+        if t == "\n":
+            lines.append(line)
+            line = ""
+        elif font.getsize(line + t, **kwargs)[0] > max_width:
+            lines.append(line)
+            line = t
+        else:
+            line += t
+    lines.append(line)
+    return lines
 
 
 async def fit_font_size(
@@ -129,7 +287,7 @@ async def fit_font_size(
             return 0
 
 
-async def help_image(commands: List[Command]) -> str:
+async def help_image(commands: List[Command]) -> BytesIO:
     font = await load_font(DEFAULT_FONT, 30)
     padding = 10
 
