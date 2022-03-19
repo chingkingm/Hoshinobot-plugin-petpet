@@ -826,9 +826,11 @@ async def dianzhongdian(
     fontsize = await text_frame(args[0], 50, 10)
     if not fontsize:
         return "文字太长了哦，改短点再试吧~"
-    if len(args) > 1:
+
+    text = args[1] if len(args) > 1 else await translate(args[0], "ja")
+    if text:
         fontsize = max(int(fontsize / 2), 10)
-        fontsize = await text_frame(args[1], fontsize, 10)
+        fontsize = await text_frame(text, fontsize, 10)
         if not fontsize:
             return "文字太长了哦，改短点再试吧~"
 
@@ -1085,3 +1087,25 @@ async def punch(users: List[UserInfo], **kwargs) -> BytesIO:
         frame.paste(fist, mask=fist)
         frames.append(frame)
     return save_gif(frames, 0.03)
+
+
+async def cyan(users: List[UserInfo], **kwargs) -> BytesIO:
+    img = users[0].img
+    img = resize(img, (500, 500))
+    color = (78, 114, 184)
+    img = color_mask(img, color)
+    draw = ImageDraw.Draw(img)
+    font = await load_font("SourceHanSansSC-Bold.otf", 80)
+    draw.text(
+        (400, 50), "群\n青", font=font, fill="white", stroke_width=2, stroke_fill=color
+    )
+    font = await load_font("SourceHanSansSC-Regular.otf", 40)
+    draw.text(
+        (310, 270),
+        "YOASOBI",
+        font=font,
+        fill="white",
+        stroke_width=2,
+        stroke_fill=color,
+    )
+    return save_jpg(img)

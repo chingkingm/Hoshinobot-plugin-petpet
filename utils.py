@@ -1,4 +1,5 @@
 import math
+import httpx
 import imageio
 from cv2 import cv2 as cv
 import numpy as np
@@ -175,6 +176,30 @@ def distort(img: IMG, coefficients: Tuple[float, float, float, float]) -> IMG:
     return Image.fromarray(np.array(res, dtype=np.uint8))
 
 
+def color_mask(img: IMG, color: Tuple[int, int, int]) -> IMG:
+    img = img.convert("RGB")
+    w, h = img.size
+    img_array = np.asarray(img)
+    img_gray = cv.cvtColor(img_array, cv.COLOR_RGB2GRAY)
+    img_hsl = cv.cvtColor(img_array, cv.COLOR_RGB2HLS)
+    img_new = np.zeros((h, w, 3), np.uint8)
+    r, g, b = color
+    rgb_sum = sum(color)
+    for i in range(h):
+        for j in range(w):
+            value = img_gray[i, j]
+            new_color = [
+                int(value * r / rgb_sum),
+                int(value * g / rgb_sum),
+                int(value * b / rgb_sum),
+            ]
+            img_new[i, j] = new_color
+    img_new_hsl = cv.cvtColor(img_new, cv.COLOR_RGB2HLS)
+    result = np.dstack((img_new_hsl[:, :, 0], img_hsl[:, :, 1], img_new_hsl[:, :, 2]))
+    result = cv.cvtColor(result, cv.COLOR_HLS2RGB)
+    return Image.fromarray(result)
+
+
 def save_gif(frames: List[IMG], duration: float) -> BytesIO:
     output = BytesIO()
     imageio.mimsave(output, frames, format="gif", duration=duration)
@@ -285,6 +310,18 @@ async def fit_font_size(
             return fontsize
         if fontsize < min_fontsize:
             return 0
+
+
+async def translate(text: str, to_lang: str, from_lang: str = "autodetect"):
+    url = "http://api.mymemory.translated.net/get"
+    params = {"q": text, "langpair": f"{from_lang}|{to_lang}"}
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(url, params=params)
+            result = resp.json()
+        return result["responseData"]["translatedText"]
+    except:
+        return ""
 
 
 async def help_image(commands: List[Command]) -> BytesIO:
