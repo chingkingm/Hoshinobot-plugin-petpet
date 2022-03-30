@@ -776,8 +776,8 @@ async def coupon(
     if text_w > text_img.width:
         return "文字太长了哦，改短点再试吧~"
 
-    draw = ImageDraw.Draw(text_img)
-    draw.multiline_text(
+    await draw_text(
+        text_img,
         ((text_img.width - text_w) / 2, 0),
         text,
         font=font,
@@ -965,8 +965,8 @@ async def safe_sense(
         return "文字太长了哦，改短点再试吧~"
     font = await load_font(fontname, fontsize)
     text_w, text_h = font.getsize_multiline(text)
-    draw = ImageDraw.Draw(frame)
-    draw.multiline_text(
+    await draw_text(
+        frame,
         ((frame.width - text_w) / 2, 30 + (45 - text_h) / 2),
         text,
         font=font,
@@ -1105,14 +1105,20 @@ async def cyan(users: List[UserInfo], **kwargs) -> BytesIO:
     img = resize(img, (500, 500))
     color = (78, 114, 184)
     img = color_mask(img, color)
-    draw = ImageDraw.Draw(img)
-    font = await load_font("SourceHanSansSC-Bold.otf", 80)
-    draw.text(
-        (400, 50), "群\n青", font=font, fill="white", stroke_width=2, stroke_fill=color
+    font = await load_font(BOLD_FONT, 80)
+    await draw_text(
+        img,
+        (400, 50),
+        "群\n青",
+        font=font,
+        fill="white",
+        stroke_width=2,
+        stroke_fill=color,
     )
-    font = await load_font("SourceHanSansSC-Regular.otf", 40)
-    draw.text(
-        (310, 270),
+    font = await load_font(DEFAULT_FONT, 40)
+    await draw_text(
+        img,
+        (280, 270),
         "YOASOBI",
         font=font,
         fill="white",
@@ -1120,3 +1126,58 @@ async def cyan(users: List[UserInfo], **kwargs) -> BytesIO:
         stroke_fill=color,
     )
     return save_jpg(img)
+
+
+async def pound(users: List[UserInfo], **kwargs) -> BytesIO:
+    img = users[0].img
+    # fmt: off
+    locs = [
+        (135, 240, 138, 47), (135, 240, 138, 47), (150, 190, 105, 95), (150, 190, 105, 95),
+        (148, 188, 106, 98), (146, 196, 110, 88), (145, 223, 112, 61), (145, 223, 112, 61)
+    ]
+    # fmt: on
+    frames = []
+    for i in range(8):
+        bg = await load_image(f"pound/{i}.png")
+        frame = Image.new("RGBA", bg.size, (255, 255, 255, 0))
+        x, y, w, h = locs[i]
+        frame.paste(resize(img, (w, h)), (x, y))
+        frame.paste(bg, mask=bg)
+        frames.append(frame)
+    return save_gif(frames, 0.05)
+
+
+async def thump(users: List[UserInfo], **kwargs) -> BytesIO:
+    img = users[0].img
+    # fmt: off
+    locs = [(65, 128, 77, 72), (67, 128, 73, 72), (54, 139, 94, 61), (57, 135, 86, 65)]
+    # fmt: on
+    frames = []
+    for i in range(4):
+        bg = await load_image(f"thump/{i}.png")
+        frame = Image.new("RGBA", bg.size, (255, 255, 255, 0))
+        x, y, w, h = locs[i]
+        frame.paste(resize(img, (w, h)), (x, y))
+        frame.paste(bg, mask=bg)
+        frames.append(frame)
+    return save_gif(frames, 0.04)
+
+
+async def need(users: List[UserInfo], **kwargs) -> BytesIO:
+    img = users[0].img
+    bg = await load_image("need/0.png")
+    frame = Image.new("RGBA", bg.size, (255, 255, 255, 0))
+    frame.paste(resize(img, (115, 115)), (327, 232))
+    frame.paste(bg, mask=bg)
+    return save_jpg(frame)
+
+
+async def cover_face(users: List[UserInfo], **kwargs) -> BytesIO:
+    img = users[0].img
+    bg = await load_image("cover_face/0.png")
+    frame = Image.new("RGBA", bg.size, (255, 255, 255, 0))
+    points = [(15, 11), (448, 0), (445, 452), (0, 461)]
+    screen = perspective(resize(img, (450, 450)), points)
+    frame.paste(screen, (120, 154))
+    frame.paste(bg, mask=bg)
+    return save_jpg(frame)
