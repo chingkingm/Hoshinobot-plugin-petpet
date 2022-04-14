@@ -88,7 +88,7 @@ async def handle(ev: CQEvent, prefix: str = "") -> Tuple[List[UserInfo], List[st
     return users, args
 
 
-@sv.on_rex(r"^(?:pp)?/(\w+)(?:\s.+)?")
+@sv.on_rex(r"^(?:pp)?/([\w@]+)(?:\s.+)?")
 async def gen_image(bot: HoshinoBot, ev: CQEvent):
     match: re.Match = ev["match"]
     hit: str = match.group(1)
