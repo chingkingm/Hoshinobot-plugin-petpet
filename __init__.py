@@ -3,7 +3,7 @@ import shlex
 from base64 import b64encode
 from io import BytesIO
 from typing import List, Tuple
-
+from string import digits
 from hoshino import HoshinoBot, Service
 from hoshino.typing import CQEvent, MessageSegment
 
@@ -94,8 +94,8 @@ async def gen_image(bot: HoshinoBot, ev: CQEvent):
     hit: str = match.group(1)
     for com in commands:
         for kw in com.keywords:
-            if hit == kw:
-                users, args = await handle(ev, f"/{hit}")
+            if hit.startswith(kw):
+                users, args = await handle(ev, f"/{kw}")
                 sender = UserInfo(qq=str(ev.user_id))
                 await get_user_info(bot, sender)
                 for user in users:
