@@ -88,29 +88,31 @@ async def handle(ev: CQEvent, prefix: str = "") -> Tuple[List[UserInfo], List[st
     return users, args
 
 
-@sv.on_rex(r"^(?:pp)?/([\w@]+)(?:\s.+)?")
+@sv.on_message()
 async def gen_image(bot: HoshinoBot, ev: CQEvent):
-    match: re.Match = ev["match"]
-    hit: str = match.group(1)
-    for com in commands:
-        for kw in com.keywords:
-            if hit == kw:
-                users, args = await handle(ev, f"/{hit}")
-                sender = UserInfo(qq=str(ev.user_id))
-                await get_user_info(bot, sender)
-                for user in users:
-                    await get_user_info(bot, user)
-                try:
-                    im = await make_image(com, sender, users, args=args)
-                except DownloadError:
-                    await bot.finish(ev, "图片下载出错，请稍后再试")
-                except ResourceError:
-                    await bot.finish(ev, "资源下载出错，请稍后再试")
-                except Exception as e:
-                    sv.logger.debug(f"{e}")
-                    await bot.finish(ev, "出错了，请稍后再试")
-                if isinstance(im, str):
-                    im = MessageSegment.text(im)
-                else:
-                    im = MessageSegment.image(bytesio2b64(im))
-                await bot.finish(ev, im)
+    match = re.match(r"^(?:pp)?([\w@]+)(?:\s.+)?",str(ev.message))
+    if match:
+        hit: str = match.group(1)
+        for com in commands:
+            for kw in com.keywords:
+                if hit == kw:
+                    users, args = await handle(ev, f"/{hit}")
+                    sender = UserInfo(qq=str(ev.user_id))
+                    await get_user_info(bot, sender)
+                    for user in users:
+                        await get_user_info(bot, user)
+                    try:
+                        im = await make_image(com, sender, users, args=args)
+                    except DownloadError:
+                        await bot.finish(ev, "图片下载出错，请稍后再试")
+                    except ResourceError:
+                        await bot.finish(ev, "资源下载出错，请稍后再试")
+                    except Exception as e:
+                        sv.logger.debug(f"{e}")
+                        await bot.finish(ev, "出错了，请稍后再试")
+                    if isinstance(im, str):
+                        im = MessageSegment.text(im)
+                    else:
+                        im = MessageSegment.image(bytesio2b64(im))
+                    await bot.send(ev, im)
+    return
