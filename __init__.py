@@ -1,5 +1,6 @@
 import re
 import shlex
+import sys
 from base64 import b64encode
 from io import BytesIO
 from typing import List, Tuple
@@ -96,6 +97,9 @@ async def gen_image(bot: HoshinoBot, ev: CQEvent):
         for com in commands:
             for kw in com.keywords:
                 if hit == kw:
+                    sv.logger.info(
+        f"Message {ev.message_id} triggered {sys._getframe().f_code.co_name}_{kw}"
+    )
                     users, args = await handle(ev, f"/{hit}")
                     sender = UserInfo(qq=str(ev.user_id))
                     await get_user_info(bot, sender)
