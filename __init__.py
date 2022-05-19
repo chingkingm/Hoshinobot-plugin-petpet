@@ -91,7 +91,7 @@ async def handle(ev: CQEvent, prefix: str = "") -> Tuple[List[UserInfo], List[st
 
 @sv.on_message()
 async def gen_image(bot: HoshinoBot, ev: CQEvent):
-    match = re.match(r"^(?:pp)?/([\w@]+)(?:\s.+)?",str(ev.message))
+    match = re.search(r"(?:pp)?/([\w@]+)(?:\s.+)?",str(ev.message))
     if match:
         hit: str = match.group(1)
         for com in commands:
