@@ -111,6 +111,9 @@ async def gen_image(bot: HoshinoBot, ev: CQEvent):
                         await bot.finish(ev, "图片下载出错，请稍后再试")
                     except ResourceError:
                         await bot.finish(ev, "资源下载出错，请稍后再试")
+                    except ValueError as e:
+                        await bot.send(ev,f"{e}")
+                        return
                     except Exception as e:
                         sv.logger.debug(f"{e}")
                         await bot.finish(ev, "出错了，请稍后再试")
